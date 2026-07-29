@@ -641,13 +641,20 @@ extension ProtocolInstanceReference {
 
     @inline(__always)
     func handleCallFromUpperProtocol<R, E: Error>(_ body: () throws(E) -> R) throws(E) -> R {
-        let protocolEventStateIndex = protocolEventStateIndex()!
+        // If the instance has already been detached (e.g. an operation racing
+        // connection teardown), there is no event state to bracket the call
+        // with: run the body directly instead of trapping.
+        guard let protocolEventStateIndex = protocolEventStateIndex() else {
+            return try body()
+        }
         return try context.handleCallFromUpperProtocol(index: protocolEventStateIndex, body)
     }
 
     @inline(__always)
     func handleCallFromUpperProtocol<R: ~Copyable, E: Error>(_ body: () throws(E) -> R) throws(E) -> R {
-        let protocolEventStateIndex = protocolEventStateIndex()!
+        guard let protocolEventStateIndex = protocolEventStateIndex() else {
+            return try body()
+        }
         return try context.handleCallFromUpperProtocol(index: protocolEventStateIndex, body)
     }
 
@@ -656,7 +663,9 @@ extension ProtocolInstanceReference {
         _ value: consuming T,
         _ body: (consuming T) throws(E) -> R
     ) throws(E) -> R {
-        let protocolEventStateIndex = protocolEventStateIndex()!
+        guard let protocolEventStateIndex = protocolEventStateIndex() else {
+            return try body(value)
+        }
         return try context.handleCallFromUpperProtocol(index: protocolEventStateIndex, value, body)
     }
 
@@ -702,12 +711,16 @@ extension ProtocolInstanceReference {
     }
 
     public func fromExternal<R, E: Error>(_ body: () throws(E) -> R) throws(E) -> R {
-        let protocolEventStateIndex = protocolEventStateIndex()!
+        guard let protocolEventStateIndex = protocolEventStateIndex() else {
+            return try body()
+        }
         return try context.fromExternal(index: protocolEventStateIndex, body)
     }
 
     public func fromExternal<R: ~Copyable, E: Error>(_ body: () throws(E) -> R) throws(E) -> R {
-        let protocolEventStateIndex = protocolEventStateIndex()!
+        guard let protocolEventStateIndex = protocolEventStateIndex() else {
+            return try body()
+        }
         return try context.fromExternal(index: protocolEventStateIndex, body)
     }
 
@@ -715,12 +728,15 @@ extension ProtocolInstanceReference {
         _ value: consuming T,
         _ body: (consuming T) throws(E) -> R
     ) throws(E) -> R {
-        let protocolEventStateIndex = protocolEventStateIndex()!
+        guard let protocolEventStateIndex = protocolEventStateIndex() else {
+            return try body(value)
+        }
         return try context.fromExternal(index: protocolEventStateIndex, value, body)
     }
 
     public func async(_ block: @escaping () -> Void) {
-        let protocolEventStateIndex = protocolEventStateIndex()!
+        // A detached instance has nothing to sequence against; drop the block.
+        guard let protocolEventStateIndex = protocolEventStateIndex() else { return }
         context.async(index: protocolEventStateIndex, block)
     }
 
@@ -743,7 +759,8 @@ extension ProtocolInstanceReference {
     }
 
     public func scheduleWakeup(milliseconds: UInt64) {
-        let protocolEventStateIndex = protocolEventStateIndex()!
+        // A detached instance no longer needs its timers.
+        guard let protocolEventStateIndex = protocolEventStateIndex() else { return }
         context.scheduleWakeup(index: protocolEventStateIndex, referenceToWakeup: self, milliseconds: milliseconds)
     }
 
