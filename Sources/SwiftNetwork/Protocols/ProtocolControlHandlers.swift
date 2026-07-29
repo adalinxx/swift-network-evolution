@@ -12,6 +12,14 @@
 //
 //===----------------------------------------------------------------------===//
 
+#if canImport(Glibc)
+import Glibc
+#elseif canImport(Musl)
+import Musl
+#elseif canImport(Darwin)
+import Darwin
+#endif
+
 /// A protocol closer to the app, with a linkage to a lower protocol toward the network.
 @_spi(ProtocolProvider)
 @available(Network 0.1.0, *)
@@ -243,7 +251,8 @@ extension ProtocolInstanceReference {
     ) throws(NetworkError) -> Linkage {
         try self.handleCallFromUpperProtocol { () throws(NetworkError) in
             switch self.reference {
-            case .none: fatalError("Cannot attach to empty protocol")
+            // Detached during teardown: fail the call instead of trapping.
+            case .none: throw NetworkError.posix(ENOTCONN)
             case .udp(let index):
                 return try context.udpInstances[index].attachUpperProtocol(
                     from,
@@ -353,7 +362,8 @@ extension ProtocolInstanceReference {
     ) throws(NetworkError) -> OutboundStreamLinkage {
         try self.handleCallFromUpperProtocol { () throws(NetworkError) in
             switch self.reference {
-            case .none: fatalError("Cannot attach to empty protocol")
+            // Detached during teardown: fail the call instead of trapping.
+            case .none: throw NetworkError.posix(ENOTCONN)
             case .tcp(var instance):
                 return try instance.attachUpperStreamProtocol(
                     from,
@@ -424,7 +434,8 @@ extension ProtocolInstanceReference {
     ) throws(NetworkError) -> OutboundDatagramLinkage {
         try self.handleCallFromUpperProtocol { () throws(NetworkError) in
             switch self.reference {
-            case .none: fatalError("Cannot attach to empty protocol")
+            // Detached during teardown: fail the call instead of trapping.
+            case .none: throw NetworkError.posix(ENOTCONN)
             case .udp(let index):
                 return try context.udpInstances[index].attachUpperDatagramProtocol(
                     from,
@@ -488,7 +499,8 @@ extension ProtocolInstanceReference {
     ) throws(NetworkError) {
         try self.fromExternal { () throws(NetworkError) in
             switch self.reference {
-            case .none: fatalError("Cannot attach to empty protocol")
+            // Detached during teardown: fail the call instead of trapping.
+            case .none: throw NetworkError.posix(ENOTCONN)
             case .udp(let index):
                 try context.udpInstances[index].attachLowerProtocol(
                     lowerProtocol,
@@ -620,7 +632,8 @@ extension ProtocolInstanceReference {
     ) throws(NetworkError) {
         try self.fromExternal { () throws(NetworkError) in
             switch self.reference {
-            case .none: fatalError("Cannot attach to empty protocol")
+            // Detached during teardown: fail the call instead of trapping.
+            case .none: throw NetworkError.posix(ENOTCONN)
             case .udp(let index):
                 try context.udpInstances[index].attachLowerDatagramProtocol(
                     lowerProtocol,
@@ -699,7 +712,8 @@ extension ProtocolInstanceReference {
     ) throws(NetworkError) {
         try self.fromExternal { () throws(NetworkError) in
             switch self.reference {
-            case .none: fatalError("Cannot attach to empty protocol")
+            // Detached during teardown: fail the call instead of trapping.
+            case .none: throw NetworkError.posix(ENOTCONN)
             case .tls(var instance):
                 try instance.attachLowerStreamProtocol(
                     lowerProtocol,
@@ -771,7 +785,8 @@ extension ProtocolInstanceReference {
     ) throws(NetworkError) {
         try self.fromExternal { () throws(NetworkError) in
             switch self.reference {
-            case .none: fatalError("Cannot attach to empty protocol")
+            // Detached during teardown: fail the call instead of trapping.
+            case .none: throw NetworkError.posix(ENOTCONN)
             #if !NETWORK_NO_SWIFT_QUIC
             case .quic(var instance):
                 try instance.attachLowerProtocolForNewPath(
@@ -807,7 +822,8 @@ extension ProtocolInstanceReference {
     ) throws(NetworkError) {
         try self.fromExternal { () throws(NetworkError) in
             switch self.reference {
-            case .none: fatalError("Cannot attach to empty protocol")
+            // Detached during teardown: fail the call instead of trapping.
+            case .none: throw NetworkError.posix(ENOTCONN)
             #if !NETWORK_NO_SWIFT_QUIC
             case .quic(var instance):
                 try instance.attachLowerDatagramProtocolForNewPath(
