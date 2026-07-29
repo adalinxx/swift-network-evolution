@@ -12,6 +12,14 @@
 //
 //===----------------------------------------------------------------------===//
 
+#if canImport(Glibc)
+import Glibc
+#elseif canImport(Musl)
+import Musl
+#elseif canImport(Darwin)
+import Darwin
+#endif
+
 @_spi(ProtocolProvider)
 @available(Network 0.1.0, *)
 public protocol InboundFlowHandler: ~Copyable, UpperProtocolHandler {
@@ -143,7 +151,8 @@ extension ProtocolInstanceReference {
     ) throws(NetworkError) -> Linkage {
         try self.handleCallFromUpperProtocol { () throws(NetworkError) in
             switch self.reference {
-            case .none: fatalError("Cannot attach to empty protocol")
+            // Detached during teardown: fail the call instead of trapping.
+            case .none: throw NetworkError.posix(ENOTCONN)
             #if !NETWORK_NO_SWIFT_QUIC
             case .quic(var instance):
                 return try instance.attachUpperProtocolToNewFlow(
@@ -179,7 +188,8 @@ extension ProtocolInstanceReference {
     ) throws(NetworkError) -> DatagramListenerLinkage {
         try self.handleCallFromUpperProtocol { () throws(NetworkError) in
             switch self.reference {
-            case .none: fatalError("Cannot attach to empty protocol")
+            // Detached during teardown: fail the call instead of trapping.
+            case .none: throw NetworkError.posix(ENOTCONN)
             #if !NETWORK_NO_SWIFT_QUIC
             case .quic(var instance):
                 return try instance.attachNewDatagramFlowProtocol(
@@ -216,7 +226,8 @@ extension ProtocolInstanceReference {
     ) throws(NetworkError) -> StreamListenerLinkage {
         try self.handleCallFromUpperProtocol { () throws(NetworkError) in
             switch self.reference {
-            case .none: fatalError("Cannot attach to empty protocol")
+            // Detached during teardown: fail the call instead of trapping.
+            case .none: throw NetworkError.posix(ENOTCONN)
             #if !NETWORK_NO_SWIFT_QUIC
             case .quic(var instance):
                 return try instance.attachNewStreamFlowProtocol(
@@ -253,7 +264,8 @@ extension ProtocolInstanceReference {
     ) throws(NetworkError) -> OutboundDatagramLinkage {
         try self.handleCallFromUpperProtocol { () throws(NetworkError) in
             switch self.reference {
-            case .none: fatalError("Cannot attach to empty protocol")
+            // Detached during teardown: fail the call instead of trapping.
+            case .none: throw NetworkError.posix(ENOTCONN)
             #if !NETWORK_NO_SWIFT_QUIC
             case .quic(var instance):
                 return try instance.attachUpperDatagramProtocolToNewFlow(
@@ -290,7 +302,8 @@ extension ProtocolInstanceReference {
     ) throws(NetworkError) -> OutboundStreamLinkage {
         try self.handleCallFromUpperProtocol { () throws(NetworkError) in
             switch self.reference {
-            case .none: fatalError("Cannot attach to empty protocol")
+            // Detached during teardown: fail the call instead of trapping.
+            case .none: throw NetworkError.posix(ENOTCONN)
             #if !NETWORK_NO_SWIFT_QUIC
             case .quic(var instance):
                 return try instance.attachUpperStreamProtocolToNewFlow(
@@ -325,7 +338,8 @@ extension ProtocolInstanceReference {
     ) throws(NetworkError) -> Linkage {
         try self.handleCallFromUpperProtocol { () throws(NetworkError) in
             switch self.reference {
-            case .none: fatalError("Cannot attach to empty protocol")
+            // Detached during teardown: fail the call instead of trapping.
+            case .none: throw NetworkError.posix(ENOTCONN)
             #if !NETWORK_NO_SWIFT_QUIC
             case .quic(var instance):
                 return try instance.attachUpperProtocolToExistingFlow(from, flowReference: flowReference)
@@ -346,7 +360,8 @@ extension ProtocolInstanceReference {
     ) throws(NetworkError) -> OutboundDatagramLinkage {
         try self.handleCallFromUpperProtocol { () throws(NetworkError) in
             switch self.reference {
-            case .none: fatalError("Cannot attach to empty protocol")
+            // Detached during teardown: fail the call instead of trapping.
+            case .none: throw NetworkError.posix(ENOTCONN)
             #if !NETWORK_NO_SWIFT_QUIC
             case .quic(var instance):
                 return try instance.attachUpperDatagramProtocolToExistingFlow(from, flowReference: flowReference)
@@ -368,7 +383,8 @@ extension ProtocolInstanceReference {
     ) throws(NetworkError) -> OutboundStreamLinkage {
         try self.handleCallFromUpperProtocol { () throws(NetworkError) in
             switch self.reference {
-            case .none: fatalError("Cannot attach to empty protocol")
+            // Detached during teardown: fail the call instead of trapping.
+            case .none: throw NetworkError.posix(ENOTCONN)
             #if !NETWORK_NO_SWIFT_QUIC
             case .quic(var instance):
                 return try instance.attachUpperStreamProtocolToExistingFlow(from, flowReference: flowReference)
